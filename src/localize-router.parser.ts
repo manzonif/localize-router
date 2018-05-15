@@ -1,7 +1,6 @@
 import { Routes, Route } from '@angular/router';
 import { TranslateService } from '@ngx-translate/core';
 import { Observable } from 'rxjs/Observable';
-import { Observer } from 'rxjs/Observer';
 import { Location } from '@angular/common';
 import 'rxjs/add/observable/forkJoin';
 import 'rxjs/add/operator/map';
