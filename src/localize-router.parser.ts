@@ -4,6 +4,7 @@ import { Observable } from 'rxjs/Observable';
 import { Observer } from 'rxjs/Observer';
 import { Location } from '@angular/common';
 import 'rxjs/add/observable/forkJoin';
+import 'rxjs/add/operator/map';
 import 'rxjs/add/operator/share';
 import 'rxjs/add/operator/toPromise';
 import { CacheMechanism, LocalizeRouterSettings } from './localize-router.config';
@@ -124,31 +125,27 @@ export abstract class LocalizeParser {
    * @returns {Promise<any>}
    */
   translateRoutes(language: string): Observable<any> {
-    return new Observable<any>((observer: Observer<any>) => {
-      this._cachedLang = language;
+    this._cachedLang = language;
+    if (this._languageRoute) {
+      this._languageRoute.path = language;
+    }
+
+    return this.translate.use(language).map((translations: any) => {
+      this._translationObject = translations;
+      this.currentLang = language;
+
       if (this._languageRoute) {
-        this._languageRoute.path = language;
+        if (this._languageRoute) {
+          this._translateRouteTree(this._languageRoute.children);
+        }
+        // if there is wildcard route
+        if (this._wildcardRoute && this._wildcardRoute.redirectTo) {
+          this._translateProperty(this._wildcardRoute, 'redirectTo', true);
+        }
+      } else {
+        this._translateRouteTree(this.routes);
       }
 
-      this.translate.use(language).subscribe((translations: any) => {
-        this._translationObject = translations;
-        this.currentLang = language;
-
-        if (this._languageRoute) {
-          if (this._languageRoute) {
-            this._translateRouteTree(this._languageRoute.children);
-          }
-          // if there is wildcard route
-          if (this._wildcardRoute && this._wildcardRoute.redirectTo) {
-            this._translateProperty(this._wildcardRoute, 'redirectTo', true);
-          }
-        } else {
-          this._translateRouteTree(this.routes);
-        }
-
-        observer.next(void 0);
-        observer.complete();
-      });
     });
   }
 
@@ -351,8 +348,8 @@ export abstract class LocalizeParser {
     if (!this._translationObject) {
       return key;
     }
-    let res = this._translationObject[this.prefix + key];
-    return res || key;
+    let res = this.translate.getParsedResult(this._translationObject, this.prefix + key);
+    return typeof res === 'string' ? res : key;
   }
 }
 
