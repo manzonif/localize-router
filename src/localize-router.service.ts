@@ -50,6 +50,7 @@ export class LocalizeRouterService {
       let rootSnapshot: ActivatedRouteSnapshot = this.router.routerState.snapshot.root;
 
       this.parser.translateRoutes(lang).subscribe(() => {
+        this.router.resetConfig(this.parser.routes);
         let url = this.traverseRouteSnapshot(rootSnapshot);
 
         if (!this.settings.alwaysSetPrefix) {
@@ -73,7 +74,6 @@ export class LocalizeRouterService {
           url = urlSegments.join('/');
         }
 
-        this.router.resetConfig(this.parser.routes);
         if (useNavigateMethod) {
           this.router.navigate([url], extras);
         } else {
