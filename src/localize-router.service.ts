@@ -50,7 +50,6 @@ export class LocalizeRouterService {
       let rootSnapshot: ActivatedRouteSnapshot = this.router.routerState.snapshot.root;
 
       this.parser.translateRoutes(lang).subscribe(() => {
-        this.router.resetConfig(this.parser.routes);
         let url = this.traverseRouteSnapshot(rootSnapshot);
 
         if (!this.settings.alwaysSetPrefix) {
@@ -74,6 +73,7 @@ export class LocalizeRouterService {
           url = urlSegments.join('/');
         }
 
+        this.router.resetConfig(this.parser.routes);
         if (useNavigateMethod) {
           this.router.navigate([url], extras);
         } else {
@@ -106,6 +106,13 @@ export class LocalizeRouterService {
    */
   private parseSegmentValue(snapshot: ActivatedRouteSnapshot): string {
     if (snapshot.routeConfig) {
+      const routeCfg = snapshot.routeConfig;
+      if (routeCfg.data && routeCfg.data['type'] === 'lang-root') {
+        routeCfg.path = this.parser.currentLang;
+      } else if (routeCfg.data && routeCfg.data.localizeRouter) {
+        routeCfg.path = this.parser.translateRoute(routeCfg.data.localizeRouter['path']);
+      }
+
       if (snapshot.routeConfig.path === '**') {
         return snapshot.url.filter((segment: UrlSegment) => segment.path).map((segment: UrlSegment) => segment.path).join('/');
       } else {
@@ -156,12 +163,12 @@ export class LocalizeRouterService {
 
       if (currentLang !== previousLang) {
         this.parser.translateRoutes(currentLang)
-        .do((_: any) => this.router.resetConfig(this.parser.routes))
-        .subscribe(() => {
-          // Fire route change event
-          this.router.resetConfig(this.parser.routes);
-          this.routerEvents.next(currentLang);
-        });
+          .do((_: any) => this.router.resetConfig(this.parser.routes))
+          .subscribe(() => {
+            // Fire route change event
+            this.router.resetConfig(this.parser.routes);
+            this.routerEvents.next(currentLang);
+          });
       }
     };
   }

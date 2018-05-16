@@ -127,6 +127,8 @@ export abstract class LocalizeParser {
     this._cachedLang = language;
     if (this._languageRoute) {
       this._languageRoute.path = language;
+      this._languageRoute.data = {};
+      this._languageRoute.data['type'] = 'lang-root';
     }
 
     return this.translate.use(language).map((translations: any) => {
