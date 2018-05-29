@@ -5,8 +5,7 @@ import { LocalizeRouterSettings } from '../src/localize-router.config';
 import { LocalizeRouterModule } from '../src/localize-router.module';
 import { getTestBed, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { Routes, Router, Event, NavigationStart, NavigationEnd } from '@angular/router';
-import { Observable } from 'rxjs/Observable';
-import { Subject } from 'rxjs/Subject';
+import { Observable, Subject, of } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 import { CommonModule, Location } from '@angular/common';
 
@@ -23,7 +22,7 @@ class FakeTranslateService {
 
   setDefaultLang = (lang: string) => { this.defLang = lang; };
   use = (lang: string) => { this.currentLang = lang; };
-  get = (input: string) => Observable.of(this.content[input] || input);
+  get = (input: string) => of(this.content[input] || input);
   getBrowserLang = () => this.browserLang;
 }
 
@@ -142,7 +141,7 @@ describe('LocalizeRouterService', () => {
     parser.currentLang = 'de';
     (<any>router).fakeRouterEvents.next(new NavigationStart(1, '/de/new/path'));
     parser.locales = ['de', 'en'];
-    spyOn(parser, 'translateRoutes').and.returnValue(Observable.of(void 0));
+    spyOn(parser, 'translateRoutes').and.returnValue(of(void 0));
 
     (<any>router).fakeRouterEvents.next(new NavigationStart(1, '/en/new/path'));
     expect(parser.translateRoutes).toHaveBeenCalledWith('en');

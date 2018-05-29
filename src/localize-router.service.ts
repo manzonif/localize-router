@@ -1,11 +1,7 @@
 import { Inject } from '@angular/core';
 import { Router, NavigationStart, ActivatedRouteSnapshot, NavigationExtras, UrlSegment } from '@angular/router';
-import { Subject } from 'rxjs/Subject';
-import 'rxjs/add/observable/forkJoin';
-import 'rxjs/add/operator/toPromise';
-import 'rxjs/add/operator/do';
-import 'rxjs/add/operator/filter';
-import 'rxjs/add/operator/pairwise';
+import { Subject } from 'rxjs';
+import { filter, pairwise, tap } from 'rxjs/operators';
 
 import { LocalizeParser } from './localize-router.parser';
 import { LocalizeRouterSettings } from './localize-router.config';
@@ -33,10 +29,10 @@ export class LocalizeRouterService {
   init(): void {
     this.router.resetConfig(this.parser.routes);
     // subscribe to router events
-    this.router.events
-      .filter(event => event instanceof NavigationStart)
-      .pairwise()
-      .subscribe(this._routeChanged());
+    this.router.events.pipe(
+      filter((event: any) => event instanceof NavigationStart),
+      pairwise()
+    ).subscribe(this._routeChanged());
   }
 
   /**
@@ -162,9 +158,9 @@ export class LocalizeRouterService {
       const currentLang = this.parser.getLocationLang(currentEvent.url) || this.parser.defaultLang;
 
       if (currentLang !== previousLang) {
-        this.parser.translateRoutes(currentLang)
-          .do((_: any) => this.router.resetConfig(this.parser.routes))
-          .subscribe(() => {
+        this.parser.translateRoutes(currentLang).pipe(
+          tap((_: any) => this.router.resetConfig(this.parser.routes))
+        ).subscribe(() => {
             // Fire route change event
             this.router.resetConfig(this.parser.routes);
             this.routerEvents.next(currentLang);

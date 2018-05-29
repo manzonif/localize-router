@@ -1,7 +1,6 @@
-import { PipeTransform, Pipe, ChangeDetectorRef } from '@angular/core';
+import { PipeTransform, Pipe, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { LocalizeRouterService } from './localize-router.service';
-import { Subscription } from 'rxjs/Subscription';
-import 'rxjs/add/observable/forkJoin';
+import { Subscription } from 'rxjs';
 import { equals } from './util';
 
 const VIEW_DESTROYED_STATE = 128;
@@ -10,7 +9,7 @@ const VIEW_DESTROYED_STATE = 128;
   name: 'localize',
   pure: false // required to update the value when the promise is resolved
 })
-export class LocalizeRouterPipe implements PipeTransform {
+export class LocalizeRouterPipe implements PipeTransform, OnDestroy {
   private value: string | any[] = '';
   private lastKey: string | any[];
   private lastLanguage: string;
@@ -25,6 +24,12 @@ export class LocalizeRouterPipe implements PipeTransform {
     this.subscription = this.localize.routerEvents.subscribe(() => {
       this.transform(this.lastKey);
     });
+  }
+  
+  ngOnDestroy() {
+    if (this.subscription) {
+      this.subscription.unsubscribe();
+    }
   }
 
   /**

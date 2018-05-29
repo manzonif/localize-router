@@ -1,11 +1,8 @@
 import { Routes, Route } from '@angular/router';
 import { TranslateService } from '@ngx-translate/core';
-import { Observable } from 'rxjs/Observable';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { Location } from '@angular/common';
-import 'rxjs/add/observable/forkJoin';
-import 'rxjs/add/operator/map';
-import 'rxjs/add/operator/share';
-import 'rxjs/add/operator/toPromise';
 import { CacheMechanism, LocalizeRouterSettings } from './localize-router.config';
 import { Inject } from '@angular/core';
 
@@ -131,7 +128,8 @@ export abstract class LocalizeParser {
       this._languageRoute.data['type'] = 'lang-root';
     }
 
-    return this.translate.use(language).map((translations: any) => {
+    return this.translate.use(language).pipe(
+      map((translations: any) => {
       this._translationObject = translations;
       this.currentLang = language;
 
@@ -147,7 +145,7 @@ export abstract class LocalizeParser {
         this._translateRouteTree(this.routes);
       }
 
-    });
+    }));
   }
 
   /**
