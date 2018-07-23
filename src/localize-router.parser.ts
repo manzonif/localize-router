@@ -155,6 +155,9 @@ export abstract class LocalizeParser {
    */
   private _translateRouteTree(routes: Routes): void {
     routes.forEach((route: Route) => {
+      if (route.data && route.data['skipRouteLocalization']) {
+        return;
+      }
       if (route.path && route.path !== '**') {
         this._translateProperty(route, 'path');
       }
