@@ -8,6 +8,8 @@ import { RouterModule, Routes } from '@angular/router';
 import { LocalizeRouterPipe } from './localize-router.pipe';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { CommonModule } from '@angular/common';
+import { TransferState, makeStateKey } from '@angular/platform-browser';
+
 import {
   ALWAYS_SET_PREFIX,
   CACHE_MECHANISM, CACHE_NAME, DEFAULT_LANG_FUNCTION, LOCALIZE_ROUTER_FORROOT_GUARD, LocalizeRouterConfig, LocalizeRouterSettings,
@@ -15,6 +17,8 @@ import {
   USE_CACHED_LANG
 } from './localize-router.config';
 import { LocalizeRouterConfigLoader } from './localize-router-config-loader';
+
+const ROUTER_CONF_KEY = makeStateKey('router_conf');
 
 @Injectable()
 export class ParserInitializer {
@@ -25,22 +29,33 @@ export class ParserInitializer {
    * CTOR
    * @param injector
    */
-  constructor(private injector: Injector) {
+  constructor(
+    private injector: Injector,
+    private state: TransferState) {
   }
 
   /**
    * @returns {Promise<any>}
    */
   appInitializer(): Promise<any> {
-    const translate: TranslateService =  this.injector.get(TranslateService);
+    const translate: TranslateService = this.injector.get(TranslateService);
+    const localize: LocalizeRouterService = this.injector.get(LocalizeRouterService);
 
-    const res = this.parser.load(this.routes, translate);
-    res.then(() => {
-      const localize: LocalizeRouterService = this.injector.get(LocalizeRouterService);
+    let _routes: Routes = this.state.get<Routes>(ROUTER_CONF_KEY, [] as Routes);
+
+    if (_routes.length > 0) {
+      const res = this.parser.load(_routes, translate, true);
       localize.init();
-    });
+      return res;
+    } else {
+      const res = this.parser.load(this.routes, translate, false);
 
-    return res;
+      res.then(() => {
+        localize.init();
+        this.state.set(ROUTER_CONF_KEY, this.parser.routes as any);
+      });
+      return res;
+    }
   }
 
   /**

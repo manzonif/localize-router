@@ -8,6 +8,7 @@
     "declaration": true,
     "moduleResolution": "node",
     "noUnusedLocals": true,
+    "removeComments": true,
     "types": [
       "hammerjs",
       "jasmine",

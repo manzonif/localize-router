@@ -29,8 +29,10 @@ export abstract class LocalizeParser {
    * @param location
    * @param settings
    */
-  constructor(@Inject(Location) private location: Location,
-              @Inject(LocalizeRouterSettings) private settings: LocalizeRouterSettings) {
+  constructor(
+    @Inject(Location) private location: Location,
+    @Inject(LocalizeRouterSettings) private settings: LocalizeRouterSettings
+  ) {
   }
 
   /**
@@ -38,16 +40,15 @@ export abstract class LocalizeParser {
    * @param routes
    * @returns {Promise<any>}
    */
-  abstract load(routes: Routes, translate: TranslateService): Promise<any>;
+  abstract load(routes: Routes, translate: TranslateService, isInTransfer?: boolean): Promise<any>;
 
   /**
-   * Initialize language and routes
+   * Initialize language and routes 
    * @param routes
    * @returns {Promise<any>}
    */
-  protected init(routes: Routes, translate: TranslateService): Promise<any> {
+  protected init(routes: Routes, translate: TranslateService, isInTransfer?: boolean): Promise<any> {
     let selectedLanguage: string;
-
     this.routes = routes;
     this.translate = translate;
 
@@ -65,6 +66,17 @@ export abstract class LocalizeParser {
     }
     selectedLanguage = locationLang || this.defaultLang;
     this.translate.setDefaultLang(this.defaultLang);
+
+    if (isInTransfer) {
+      this._languageRoute = this.routes.find((_route) => {
+        return _route.data && _route.data.type === 'lang-root';
+      });
+      return this.translate.use(selectedLanguage).pipe(
+        map((translations: any) => {
+          this._translationObject = translations;
+          this.currentLang = selectedLanguage;
+        })).toPromise();
+    }
 
     let children: Routes = [];
     /** if set prefix is enforced */
@@ -89,13 +101,26 @@ export abstract class LocalizeParser {
           this.routes.push(children[i]);
         }
         children.splice(i, 1);
+      } else {
+        if (!children[i].data) {
+          children[i].data = {};
+        }
+        if (!children[i].data['skipRouteLocalization']) {
+          children[i].data.localizeRouter = { path: children[i].path, redirectTo: children[i].redirectTo };
+        }
       }
     }
 
     /** append children routes */
     if (children && children.length) {
       if (this.locales.length > 1 || this.settings.alwaysSetPrefix) {
-        this._languageRoute = { children: children };
+        this._languageRoute = {
+          path: selectedLanguage,
+          data: {
+            type: 'lang-root'
+          },
+          children: children
+        };
         this.routes.unshift(this._languageRoute);
       }
     }
@@ -108,6 +133,7 @@ export abstract class LocalizeParser {
     /** translate routes */
     const res = this.translateRoutes(selectedLanguage);
     return res.toPromise();
+
   }
 
   initChildRoutes(routes: Routes) {
@@ -130,22 +156,22 @@ export abstract class LocalizeParser {
 
     return this.translate.use(language).pipe(
       map((translations: any) => {
-      this._translationObject = translations;
-      this.currentLang = language;
+        this._translationObject = translations;
+        this.currentLang = language;
 
-      if (this._languageRoute) {
         if (this._languageRoute) {
-          this._translateRouteTree(this._languageRoute.children);
+          if (this._languageRoute) {
+            this._translateRouteTree(this._languageRoute.children);
+          }
+          // if there is wildcard route
+          if (this._wildcardRoute && this._wildcardRoute.redirectTo) {
+            this._translateProperty(this._wildcardRoute, 'redirectTo', true);
+          }
+        } else {
+          this._translateRouteTree(this.routes);
         }
-        // if there is wildcard route
-        if (this._wildcardRoute && this._wildcardRoute.redirectTo) {
-          this._translateProperty(this._wildcardRoute, 'redirectTo', true);
-        }
-      } else {
-        this._translateRouteTree(this.routes);
-      }
 
-    }));
+      }));
   }
 
   /**
@@ -351,7 +377,14 @@ export abstract class LocalizeParser {
       return key;
     }
     let res = this.translate.getParsedResult(this._translationObject, this.prefix + key);
-    return typeof res === 'string' ? res : key;
+    switch (typeof res) {
+      case 'string':
+        return res;
+      case 'object':
+        return res.name;
+      default:
+        return key;
+    }
   }
 }
 
@@ -379,9 +412,11 @@ export class ManualParserLoader extends LocalizeParser {
    * @param routes
    * @returns {Promise<any>}
    */
-  load(routes: Routes, translate: TranslateService): Promise<any> {
+  load(routes: Routes, translate: TranslateService, isInTransfer?: boolean): Promise<any> {
     return new Promise((resolve: any) => {
-      this.init(routes, translate).then(resolve);
+      this.init(routes, translate, isInTransfer).then((value) => {
+        resolve();
+      });
     });
   }
 }
@@ -389,7 +424,7 @@ export class ManualParserLoader extends LocalizeParser {
 export class DummyLocalizeParser extends LocalizeParser {
   load(routes: Routes, translate: TranslateService): Promise<any> {
     return new Promise((resolve: any) => {
-      this.init(routes, translate).then(resolve);
+      this.init(routes, translate, false).then(resolve);
     });
   }
 }

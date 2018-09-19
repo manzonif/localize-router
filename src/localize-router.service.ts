@@ -19,7 +19,10 @@ export class LocalizeRouterService {
    * @param settings
    * @param router
    */
-  constructor(@Inject(LocalizeParser) public parser: LocalizeParser, @Inject(LocalizeRouterSettings) public settings: LocalizeRouterSettings, @Inject(Router) private router: Router) {
+  constructor(
+    @Inject(LocalizeParser) public parser: LocalizeParser, 
+    @Inject(LocalizeRouterSettings) public settings: LocalizeRouterSettings, 
+    @Inject(Router) private router: Router) {
     this.routerEvents = new Subject<string>();
   }
 
@@ -154,8 +157,8 @@ export class LocalizeRouterService {
    */
   private _routeChanged(): (eventPair: [NavigationStart, NavigationStart]) => void {
     return ([previousEvent, currentEvent]: [NavigationStart, NavigationStart]) => {
-      const previousLang = this.parser.getLocationLang(previousEvent.url) || this.parser.defaultLang;
-      const currentLang = this.parser.getLocationLang(currentEvent.url) || this.parser.defaultLang;
+      const previousLang = this.parser.getLocationLang(previousEvent.url) || this.parser.currentLang;
+      const currentLang = this.parser.getLocationLang(currentEvent.url) || this.parser.currentLang;
 
       if (currentLang !== previousLang) {
         this.parser.translateRoutes(currentLang).pipe(
