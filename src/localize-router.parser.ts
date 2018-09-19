@@ -381,7 +381,7 @@ export abstract class LocalizeParser {
       case 'string':
         return res;
       case 'object':
-        return res.name;
+        return res['PAGE_NAME'] ? res['PAGE_NAME']: key;
       default:
         return key;
     }
